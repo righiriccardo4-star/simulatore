@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TVA // Multiverso Frattale Nexus</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            background-color: #0f1218;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        header {
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        h1 {
+            color: #ff8c00;
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(255, 140, 0, 0.4);
+        }
+
+        p.subtitle {
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        .display-container {
+            width: 100%;
+            max-width: 1100px;
+            background: #161b22;
+            border: 2px solid #30363d;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .status-box {
+            font-size: 0.95rem;
+            color: #ffb432;
+            text-align: center;
+            font-weight: bold;
+            min-height: 24px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 420px;
+            background-color: #0d1117;
+            border-radius: 8px;
+            border: 1px solid #21262d;
+            cursor: grab;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        .controls {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            background-color: #b85c00;
+            color: #ffffff;
+            border: 2px solid #ffb432;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3);
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background-color: #e67300;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 140, 0, 0.5);
+        }
+
+        button.reset-btn {
+            background-color: #21262d;
+            border-color: #8b949e;
+        }
+
+        button.reset-btn:hover {
+            background-color: #30363d;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>TVA // MULTIVERSE TREE SIMULATOR</h1>
+        <p class="subtitle">Usa il MOUSE per TRASCINARE e la ROTELLINA per fare ZOOM</p>
+    </header>
+
+    <div class="display-container">
+        <div id="statusBox" class="status-box">Sacra Linea Temporale integra. Premi per generare un Nexus!</div>
+        <canvas id="treeCanvas"></canvas>
+    </div>
+
+    <div class="controls">
+        <button id="nexusBtn">GENERA EVENTO NEXUS</button>
+        <button id="resetBtn" class="reset-btn">RIAZZERA VISTA E TEMPOLINEA</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('treeCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusBox = document.getElementById('statusBox');
+
+        // Struttura dati albero
+        let activeNodes = [];
+        let allLines = [];
+        let generation = 0;
+
+        // Gestione Telecamera (Pan & Zoom)
+        let cameraOffset = { x: 50, y: 0 };
+        let cameraZoom = 1;
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            if (generation === 0) {
+                cameraOffset.y = canvas.height / 2;
+            }
+            drawTree();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function resetTree() {
+            generation = 0;
+            allLines = [];
+            cameraZoom = 1;
+            cameraOffset = { x: 50, y: canvas.height / 2 };
+            
+            const startX = 0;
+            const startY = 0; // Rispetto all'origine del mondo
+            const yellowLength = 180;
+            
+            const firstNode = { x: startX + yellowLength, y: startY, isSacred: true };
+            
+            // Tronco giallo principale iniziale
+            allLines.push({
+                x1: startX, y1: startY,
+                x2: firstNode.x, y2: firstNode.y,
+                color: "#ffb432",
+                width: 6
+            });
+
+            activeNodes = [firstNode];
+            statusBox.textContent = "Sacra Linea Temporale integra (Linea Gialla principale).";
+            drawTree();
+        }
+
+        function triggerNexusEvent() {
+            generation++;
+            const newNodes = [];
+            const stepX = 120;
+            const spreadY = Math.max(12, 110 / Math.pow(generation, 0.7));
+
+            activeNodes.forEach(node => {
+                // 1. SE È SULLA SACRA LINEA TEMPORALE: Continua la linea GIALLA dritta a destra
+                if (node.isSacred) {
+                    const nextSacredNode = { x: node.x + stepX, y: node.y, isSacred: true };
+                    allLines.push({
+                        x1: node.x, y1: node.y,
+                        x2: nextSacredNode.x, y2: nextSacredNode.y,
+                        color: "#ffb432", // Giallo continuo
+                        width: 5
+                    });
+                    newNodes.push(nextSacredNode);
+                }
+
+                // 2. RAMO ALTO (Ciano) - Ramificazione Obliqua
+                const topNode = { x: node.x + stepX, y: node.y - spreadY, isSacred: false };
+                allLines.push({
+                    x1: node.x, y1: node.y,
+                    x2: topNode.x, y2: topNode.y,
+                    color: "#00d2ff",
+                    width: Math.max(2, 4 - generation * 0.3)
+                });
+                newNodes.push(topNode);
+
+                // 3. RAMO BASSO (Rosso) - Ramificazione Obliqua
+                const bottomNode = { x: node.x + stepX, y: node.y + spreadY, isSacred: false };
+                allLines.push({
+                    x1: node.x, y1: node.y,
+                    x2: bottomNode.x, y2: bottomNode.y,
+                    color: "#ff3264",
+                    width: Math.max(2, 4 - generation * 0.3)
+                });
+                newNodes.push(bottomNode);
+            });
+
+            activeNodes = newNodes;
+            statusBox.textContent = `Nexus Generazione ${generation}: Creati ${activeNodes.length} rami temporali attivi!`;
+            drawTree();
+        }
+
+        function drawTree() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            // Applica la trasformazione di Pan e Zoom
+            ctx.translate(cameraOffset.x, cameraOffset.y);
+            ctx.scale(cameraZoom, cameraZoom);
+
+            // Disegna le linee
+            allLines.forEach(line => {
+                ctx.beginPath();
+                ctx.moveTo(line.x1, line.y1);
+                ctx.lineTo(line.x2, line.y2);
+                ctx.strokeStyle = line.color;
+                ctx.lineWidth = line.width;
+                ctx.lineCap = "round";
+                ctx.stroke();
+            });
+
+            // Disegna i punti attivi
+            activeNodes.forEach(node => {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.isSacred ? 7 : 5, 0, Math.PI * 2);
+                ctx.fillStyle = node.isSacred ? "#ffb432" : "#ffffff";
+                ctx.shadowColor = "#ffffff";
+                ctx.shadowBlur = 8;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+
+            ctx.restore();
+        }
+
+        // --- GESTIONE CONTROLLI PAN E ZOOM ---
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            dragStart = { x: e.clientX - cameraOffset.x, y: e.clientY - cameraOffset.y };
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                cameraOffset.x = e.clientX - dragStart.x;
+                cameraOffset.y = e.clientY - dragStart.y;
+                drawTree();
+            }
+        });
+
+        window.addEventListener('mouseup', () => { isDragging = false; });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
+            cameraZoom = Math.min(Math.max(0.2, cameraZoom * zoomFactor), 4);
+            drawTree();
+        }, { passive: false });
+
+        document.getElementById('nexusBtn').addEventListener('click', triggerNexusEvent);
+        document.getElementById('resetBtn').addEventListener('click', resetTree);
+
+        resizeCanvas();
+        resetTree();
+    </script>
+</body>
+</html>
